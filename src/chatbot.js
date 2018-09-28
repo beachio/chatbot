@@ -2,7 +2,7 @@ import store from './store'
 import _ from 'underscore'
 
 const chatbot = {
-  activeAction(signals=[], { conditionField='condition' }) {
+  activeAction(signals=[], { conditionField='condition' } = {}) {
     const scope = chatbot.scope()
     return signals.find(s => {
       return isNaN(s[conditionField]) || _.template(`{{!!(${s[conditionField]})}}`)(scope) == 'true'
@@ -19,12 +19,12 @@ const chatbot = {
     }
   },
   evalBlock: {
-    Chatbot_BotMessageObject (object) {
+    Chatbot_BotMessageObject (object, { delay }) {
       return new Promise(resolve => {
         store.commit('chatbot/typing', true)
         setTimeout(() => {
           resolve(!object.info.settings.actionsControls.length && !object.info.settings.allowCustomInput)
-        }, 1000);
+        }, delay);
       })
       .then(res => {
         store.dispatch('message/send', {
@@ -39,7 +39,7 @@ const chatbot = {
       })
 
     },
-    Chatbot_UserMessageObject (object) {
+    Chatbot_UserMessageObject (object, { delay }) {
       return new Promise(resolve => {
         store.dispatch('message/send', {
           from: 'user',
@@ -50,7 +50,7 @@ const chatbot = {
         resolve(true)
       })
     },
-    Chatbot_RouterObject (object) {
+    Chatbot_RouterObject (object, { delay }) {
       return new Promise(resolve => {
         const action = chatbot.activeAction(object.info.settings.actions, { signalField: 'condition' })
         if (action.type == 'SEND_BOT_MESSAGE') {

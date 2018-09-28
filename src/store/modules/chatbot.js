@@ -60,7 +60,7 @@ export default {
           dispatch('addBlock', object)
         })
     },
-    next ({ dispatch, commit, getters }) {
+    next: _.debounce(({ dispatch, commit, getters }) => {
       commit('setModel', getters['preModel'])
       commit('resetPreModel')
       const id = getters['lastBlock'].id
@@ -68,14 +68,17 @@ export default {
         .next_block({id})
         .then(response => {
           const objects = response.body
-          const object = objects[0]
+          const object = chatbot.activeAction(objects)
           dispatch('addBlock', object)
         })
-    },
+    }, 300),
     addBlock ({ commit, dispatch }, block) {
       if (block) {
         if (chatbot.evalBlock[block.type]) {
-          chatbot.evalBlock[block.type](block).then(next => {
+          const defaultDelay = block.type == 'Chatbot_BotMessageObject' ? 1000 : 0
+          const delay = parseInt(block.connection && block.connection.settings.isDelay ? block.connection.settings.delay : defaultDelay)
+
+          chatbot.evalBlock[block.type](block, { delay }).then(next => {
             commit('addBlock', block)
 
             if (next) {
